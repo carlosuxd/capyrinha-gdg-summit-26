@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capy-Cool — Custom Character Studio & Sprite Mapper</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦫</text></svg>">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-icon">🦫</div>
+      <div class="brand-info">
+        <h1>Capy-Cool Studio</h1>
+        <p>Custom Clothes Configurator & Vector Studio</p>
+      </div>
+    </div>
+
+    <!-- Header Actions -->
+    <div class="header-actions">
+      <button id="btnRandomize" class="btn btn-outline" title="Randomize Colors">
+        <span>🎲</span> Randomize
+      </button>
+      <button id="btnResetAll" class="btn btn-outline" title="Reset to Original Look">
+        <span>🔄</span> Reset
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="main-container">
+    
+    <!-- Character Stage (Left/Center) -->
+    <section class="stage-section">
+      <!-- Preview Stage: Vector SVG Container -->
+      <div class="canvas-wrapper" id="canvasWrapper">
+        <!-- LATAM Flag Background Layer -->
+        <div id="latamBgLayer" class="latam-bg-layer"></div>
+
+        <!-- Live Vector SVG Container -->
+        <div id="svgStageContainer" class="svg-stage-container" style="position: relative; z-index: 2;">
+          <!-- Injected dynamically via app.js -->
+        </div>
+      </div>
+
+      <!-- Equipped Pills -->
+      <div class="stage-pills" id="equippedPills">
+        <!-- Populated dynamically via JS -->
+      </div>
+
+      <!-- Export Actions -->
+      <div class="stage-actions">
+        <!-- SVG Mode Export -->
+        <button id="btnDownloadSVG" class="btn btn-primary">
+          <span>⚡</span> Download Vector SVG
+        </button>
+        <button id="btnDownloadPNG" class="btn btn-primary">
+          <span>📥</span> Download High-Res PNG
+        </button>
+        <button id="btnExportCard" class="btn btn-outline">
+          <span>🎴</span> Export Character Card
+        </button>
+        <button id="btnCopyClipboard" class="btn btn-outline">
+          <span>📋</span> Copy Image
+        </button>
+      </div>
+    </section>
+
+    <!-- Sidebar Customizer (Right) -->
+    <aside class="customizer-sidebar">
+      
+      <!-- ==================== VECTOR SVG STUDIO SIDEBAR ==================== -->
+      <div id="sidebarSvgMode" style="display: flex; flex-direction: column; height: 100%;">
+        <!-- Tabs Bar -->
+        <nav class="sidebar-tabs">
+          <button class="tab-btn active" data-svgtab="clothes">
+            <span>👕</span> Clothes & Colors
+          </button>
+          <button class="tab-btn" data-svgtab="accessories">
+            <span>🕶️</span> Details & Shades
+          </button>
+          <button class="tab-btn" data-svgtab="presets">
+            <span>⭐</span> Presets
+          </button>
+        </nav>
+
+        <div class="tab-content-area">
+          
+          <!-- TAB 1: CLOTHES & COLORS -->
+          <div class="tab-pane active" id="svgtab-clothes">
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">
+              Customize the vector colors of Capy-Cool's clothes with real-time 3D highlights, shadows, and creases!
+            </p>
+
+            <!-- 1. Background Flag (LATAM) Section -->
+            <div class="vector-section-card" id="sectionLatamFlag">
+              <div class="vector-card-title">
+                <span>🌎 Background Flag (LATAM)</span>
+              </div>
+
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin: 6px 0 10px 0;">
+                Select a Latin American country flag for the stage background:
+              </p>
+
+              <div class="vector-row" style="margin-bottom: 10px; display: flex; flex-direction: column; align-items: stretch; gap: 6px;">
+                <label style="font-size: 0.78rem; font-weight: 500; color: var(--text-muted);">Country Flag:</label>
+                <select id="selectLatamFlag" class="latam-flag-select btn btn-outline" style="width: 100%; padding: 8px 10px; font-size: 0.82rem; text-align: left;">
+                  <option value="none">🏳️ None (Neutral)</option>
+                </select>
+              </div>
+
+              <!-- Match Outfit Button under Dropdown -->
+              <button id="btnMatchFlagColors" class="btn btn-outline btn-match-flag" style="width: 100%; padding: 7px 12px; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 6px;" title="Match character outfit with this country's flag colors">
+                <span>⚽</span> Match Outfit to Flag
+              </button>
+            </div>
+
+            <!-- 2. Hoodie / Outerwear Section -->
+            <div class="vector-section-card">
+              <div class="vector-card-title">
+                <span>🧥 Hoodie / Outerwear</span>
+                <input type="color" id="svgHoodiePicker" class="picker-input" value="#2572C0" title="Custom Color Picker">
+              </div>
+              <div class="palette-swatches" id="svgHoodieSwatches"></div>
+
+              <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-color);">
+                <div class="vector-row">
+                  <label>🧶 Drawstrings Cord:</label>
+                  <input type="color" id="svgDrawstringPicker" class="picker-input" value="#FBFAF6" style="width: 28px; height: 28px;">
+                </div>
+                <div class="palette-swatches" id="svgDrawstringSwatches"></div>
+              </div>
+            </div>
+
+            <!-- 3. Pants / Cargo Shorts Section -->
+            <div class="vector-section-card">
+              <div class="vector-card-title">
+                <span>🩳 Pants & Cargo Shorts</span>
+                <input type="color" id="svgPantsPicker" class="picker-input" value="#338D52" title="Custom Color Picker">
+              </div>
+              <div class="palette-swatches" id="svgPantsSwatches"></div>
+            </div>
+
+            <!-- 4. Shoes (Sneakers) Section -->
+            <div class="vector-section-card">
+              <div class="vector-card-title">
+                <span>👟 Sneakers & Footwear</span>
+                <input type="color" id="svgShoePicker" class="picker-input" value="#D7413D" title="Main Shoe Color">
+              </div>
+              <div class="palette-swatches" id="svgShoeSwatches"></div>
+
+              <!-- Shoe Stripe Mode -->
+              <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-color);">
+                <div class="vector-row">
+                  <label>Side Stripes Style:</label>
+                  <select id="svgShoeStripeMode" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.74rem;">
+                    <option value="rainbow">🌈 Rainbow Pride</option>
+                    <option value="monochrome">🎨 Match Shoe Accent</option>
+                    <option value="white">⚪ Clean White</option>
+                    <option value="gold">🟡 Gold Street</option>
+                  </select>
+                </div>
+
+                <div class="vector-row">
+                  <label>Shoe Laces:</label>
+                  <input type="color" id="svgLacesPicker" class="picker-input" value="#FBFAF6" style="width: 28px; height: 28px;">
+                </div>
+
+                <div class="vector-row">
+                  <label>Rubber Soles & Toe Caps:</label>
+                  <input type="color" id="svgSolesPicker" class="picker-input" value="#EEEDEA" style="width: 28px; height: 28px;">
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- TAB 2: DETAILS & ACCESSORIES -->
+          <div class="tab-pane" id="svgtab-accessories">
+            
+            <!-- Sunglasses -->
+            <div class="vector-section-card">
+              <div class="vector-card-title">
+                <span>🕶️ Multi-Color Sunglasses</span>
+                <select id="svgGlassesMode" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.74rem;">
+                  <option value="rainbow">🌈 Rainbow Multi-Color</option>
+                  <option value="solid">🎨 Solid Color</option>
+                  <option value="hidden">❌ Off (Show Eyes)</option>
+                </select>
+              </div>
+
+              <div id="svgGlassesColorRow" class="vector-row" style="display: none;">
+                <label>Frame Color:</label>
+                <input type="color" id="svgGlassesColorPicker" class="picker-input" value="#2572C0">
+              </div>
+              <div class="palette-swatches" id="svgGlassesSwatches" style="display: none;"></div>
+
+              <div class="vector-row" style="margin-top: 10px;">
+                <label>Dark Lenses Tint:</label>
+                <input type="color" id="svgLensPicker" class="picker-input" value="#36383F" style="width: 28px; height: 28px;">
+              </div>
+            </div>
+
+            <!-- Capybara Fur & Body -->
+            <div class="vector-section-card">
+              <div class="vector-card-title">
+                <span>🦫 Capybara Fur & Skin Tone</span>
+                <input type="color" id="svgFurPicker" class="picker-input" value="#EF8241">
+              </div>
+              <div class="palette-swatches" id="svgFurSwatches"></div>
+
+              <div class="vector-row" style="margin-top: 10px;">
+                <label>Snout / Muzzle Shade:</label>
+                <input type="color" id="svgSnoutPicker" class="picker-input" value="#B86342" style="width: 28px; height: 28px;">
+              </div>
+
+              <div class="vector-row">
+                <label>Cute Cheeks Blush:</label>
+                <input type="color" id="svgBlushPicker" class="picker-input" value="#F23A34" style="width: 28px; height: 28px;">
+              </div>
+            </div>
+
+          </div>
+
+          <!-- TAB 3: SVG PRESETS -->
+          <div class="tab-pane" id="svgtab-presets">
+            <div class="category-group">
+              <span class="category-title">⭐ Featured Vector Looks</span>
+              <div class="presets-list" id="svgPresetsList"></div>
+            </div>
+
+            <div class="category-group">
+              <div class="category-header">
+                <span class="category-title">💾 My Saved Looks</span>
+                <button id="btnClearSvgPresets" class="btn btn-outline" style="padding: 2px 8px; font-size: 0.72rem;">Clear All</button>
+              </div>
+              <div class="presets-list" id="userSvgPresetsList">
+                <p style="font-size: 0.78rem; color: var(--text-muted);">No custom looks saved yet.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <script src="latam-flags.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

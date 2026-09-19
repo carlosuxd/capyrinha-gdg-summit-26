@@ -1,0 +1,20 @@
+{
+  "hosting": {
+    "site": "capyrinha-3bb4a",
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "server.py",
+      "*.py",
+      "test_*.jpg"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

@@ -187,6 +187,30 @@ body {
     height: auto;
     overflow: visible;
   }
+
+  .stage-section {
+    overflow: visible !important;
+    height: auto !important;
+    padding: 20px 16px 36px 16px !important;
+    position: relative !important;
+    z-index: 100 !important;
+  }
+
+  .customizer-sidebar {
+    overflow: visible !important;
+    height: auto !important;
+    border-left: none !important;
+    border-top: 1px solid var(--border-color) !important;
+    position: relative !important;
+    z-index: 10 !important;
+  }
+
+  .tab-content-area {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    padding: 16px 14px 60px 14px !important;
+  }
 }
 
 /* Stage / Canvas Section */
@@ -300,12 +324,17 @@ body {
   width: 100%;
   max-width: 430px;
   position: relative;
-  z-index: 50;
+  z-index: 110;
 }
 
 .export-dropdown {
   position: relative;
   width: 100%;
+  z-index: 120;
+}
+
+.export-dropdown.active {
+  z-index: 9999;
 }
 
 .export-dropdown .dropdown-toggle {
@@ -320,6 +349,8 @@ body {
   box-shadow: 0 4px 14px rgba(255, 107, 74, 0.35);
   cursor: pointer;
   border: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .dropdown-arrow {
@@ -342,24 +373,26 @@ body {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75);
   padding: 8px;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  z-index: 1000;
+  z-index: 10000;
   opacity: 0;
   visibility: hidden;
   transform: translateY(-8px);
-  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  pointer-events: none;
 }
 
 .export-dropdown.active .export-dropdown-menu {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
+  pointer-events: auto;
 }
 
 .dropdown-item {
@@ -375,6 +408,12 @@ body {
   cursor: pointer;
   width: 100%;
   transition: background 0.15s ease, transform 0.1s ease;
+  -webkit-tap-highlight-color: rgba(255, 107, 74, 0.15);
+  touch-action: manipulation;
+}
+
+.dropdown-item * {
+  pointer-events: none;
 }
 
 .dropdown-item:hover, .dropdown-item:focus {
@@ -382,7 +421,7 @@ body {
 }
 
 .dropdown-item:active {
-  transform: scale(0.99);
+  transform: scale(0.98);
 }
 
 .dropdown-item-icon {

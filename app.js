@@ -861,6 +861,7 @@ class CapyStudio {
     const modal = document.getElementById("mobileSaveModal");
     const previewImg = document.getElementById("mobileSaveImg");
     const btnShare = document.getElementById("btnModalShare");
+    const btnOpenTab = document.getElementById("btnModalOpenTab");
 
     if (!modal || !previewImg) return;
 
@@ -871,6 +872,12 @@ class CapyStudio {
       if (btnShare) btnShare.style.display = "flex";
     } else {
       if (btnShare) btnShare.style.display = "none";
+    }
+
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (btnOpenTab) {
+      btnOpenTab.style.display = isIOS ? "flex" : "none";
     }
 
     modal.classList.add("active");
@@ -1000,7 +1007,16 @@ class CapyStudio {
         btnToggle.disabled = true;
       }
 
-      const { blob, fileName } = await this.prepareExportData();
+      const { dataUrl, blob, fileName, file } = await this.prepareExportData();
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || 
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+      // On iOS browsers (especially Chrome on iOS), <a download> does not work reliably for blobs.
+      // Automatically open the mobile save modal with clear instructions:
+      if (isIOS) {
+        this.openMobileSaveModal(dataUrl, fileName, blob, file);
+        return;
+      }
 
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -1299,32 +1315,61 @@ class CapyStudio {
     }
 
     // Export Dropdown & Actions
+    const exportDropdown = document.getElementById("exportDropdown");
     const btnDownloadPNG = document.getElementById("btnDownloadPNG");
+    const btnOptionCameraRoll = document.getElementById("btnOptionCameraRoll");
+    const btnOptionDownloadFile = document.getElementById("btnOptionDownloadFile");
+
     if (btnDownloadPNG) {
-      btnDownloadPNG.addEventListener("click", (e) => {
-        e.stopPropagation();
+      const handleToggle = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
         this.toggleExportDropdown();
-      });
+      };
+      btnDownloadPNG.addEventListener("click", handleToggle);
     }
 
-    const btnOptionCameraRoll = document.getElementById("btnOptionCameraRoll");
     if (btnOptionCameraRoll) {
-      btnOptionCameraRoll.addEventListener("click", () => {
+      const handleCameraRoll = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
         this.closeExportDropdown();
         this.saveToCameraRoll();
-      });
+      };
+      btnOptionCameraRoll.addEventListener("click", handleCameraRoll);
     }
 
-    const btnOptionDownloadFile = document.getElementById("btnOptionDownloadFile");
     if (btnOptionDownloadFile) {
-      btnOptionDownloadFile.addEventListener("click", () => {
+      const handleDownloadFile = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
         this.closeExportDropdown();
         this.downloadAsFile();
+      };
+      btnOptionDownloadFile.addEventListener("click", handleDownloadFile);
+    }
+
+    // Stop propagation inside dropdown container so clicks inside do not trigger outside-click
+    if (exportDropdown) {
+      exportDropdown.addEventListener("click", (e) => {
+        e.stopPropagation();
       });
     }
 
     // Close dropdown on click outside
     document.addEventListener("click", (e) => {
+      if (!e.target.closest("#exportDropdown")) {
+        this.closeExportDropdown();
+      }
+    });
+
+    document.addEventListener("pointerdown", (e) => {
       if (!e.target.closest("#exportDropdown")) {
         this.closeExportDropdown();
       }
@@ -1385,6 +1430,21 @@ class CapyStudio {
       });
     }
 
+    const btnModalOpenTab = document.getElementById("btnModalOpenTab");
+    if (btnModalOpenTab) {
+      btnModalOpenTab.addEventListener("click", () => {
+        if (this.currentExportData?.dataUrl) {
+          const newWin = window.open();
+          if (newWin) {
+            newWin.document.write(`<title>CapyCool Character</title><style>body{margin:0;background:#191923;display:flex;align-items:center;justify-content:center;min-height:100vh;}img{max-width:100%;max-height:100vh;object-fit:contain;}</style><img src="${this.currentExportData.dataUrl}" alt="CapyCool Character" />`);
+            newWin.document.close();
+          } else {
+            window.location.href = this.currentExportData.dataUrl;
+          }
+        }
+      });
+    }
+
     const btnModalDownloadDirect = document.getElementById("btnModalDownloadDirect");
     if (btnModalDownloadDirect) {
       btnModalDownloadDirect.addEventListener("click", () => {
@@ -1414,10 +1474,13 @@ class CapyStudio {
       }
 
       const rect = this.canvasWrapper.getBoundingClientRect();
-      // Show when the main character canvas has scrolled up near or past the header
-      const isCanvasHidden = rect.bottom < 80;
+      const scrollY = window.pageYOffset || document.documentElement.scrollTop || window.scrollY || 0;
 
-      if (isCanvasHidden) {
+      // Show floating preview whenever user has scrolled down past the top section
+      // (either scrollY > 120 or canvas top moves above header < 60px)
+      const isCanvasScrolled = rect.top < 60 || scrollY > 120;
+
+      if (isCanvasScrolled) {
         this.floatingPreview.classList.add("visible");
       } else {
         this.floatingPreview.classList.remove("visible");
@@ -1425,7 +1488,7 @@ class CapyStudio {
     };
 
     let ticking = false;
-    window.addEventListener("scroll", () => {
+    const onScroll = () => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
           checkVisibility();
@@ -1433,11 +1496,11 @@ class CapyStudio {
         });
         ticking = true;
       }
-    }, { passive: true });
+    };
 
-    window.addEventListener("resize", () => {
-      checkVisibility();
-    }, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", checkVisibility, { passive: true });
+    document.addEventListener("scroll", onScroll, { passive: true });
 
     // Tap/Click to smoothly scroll up to the character image
     const handleTapScroll = (e) => {
@@ -1453,6 +1516,9 @@ class CapyStudio {
     };
 
     this.floatingPreview.addEventListener("click", handleTapScroll);
+    this.floatingPreview.addEventListener("touchstart", (e) => {
+      handleTapScroll(e);
+    }, { passive: false });
     this.floatingPreview.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") {
         handleTapScroll(e);

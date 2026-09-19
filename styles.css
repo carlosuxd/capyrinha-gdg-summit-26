@@ -175,14 +175,26 @@ body {
     height: auto;
     overflow: visible;
   }
+
+  .stage-section {
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  .stage-actions {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    margin-top: 16px !important;
+  }
 }
 
 /* Stage / Canvas Section */
 .stage-section {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 32px;
   padding: 24px;
   position: relative;
   background: radial-gradient(circle at center, #1e2433 0%, #12151c 100%);
@@ -283,9 +295,9 @@ body {
 
 .stage-actions {
   display: flex;
+  flex-direction: column;
   gap: 12px;
-  margin-top: 20px;
-  flex-wrap: wrap;
+  min-width: 210px;
   justify-content: center;
 }
 

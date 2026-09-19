@@ -211,6 +211,36 @@
 
   </main>
 
+  <!-- Mobile Save to Camera Roll Modal -->
+  <div id="mobileSaveModal" class="save-modal-backdrop" aria-hidden="true">
+    <div class="save-modal-card">
+      <div class="save-modal-header">
+        <div class="save-modal-title">
+          <span style="font-size: 1.3rem;">📸</span>
+          <h3>Save to Camera Roll</h3>
+        </div>
+        <button id="btnCloseSaveModal" class="save-modal-close" aria-label="Close">&times;</button>
+      </div>
+
+      <p class="save-modal-instructions">
+        👉 <strong>Press and hold</strong> the picture below, then tap <strong>"Save to Photos"</strong> (or <strong>"Add to Photos"</strong>).
+      </p>
+
+      <div class="save-modal-image-container">
+        <img id="mobileSaveImg" src="" alt="CapyCool Custom Character" />
+      </div>
+
+      <div class="save-modal-actions">
+        <button id="btnModalShare" class="btn btn-primary" style="display: none;">
+          <span>📤</span> Save to Camera Roll
+        </button>
+        <button id="btnModalDownloadDirect" class="btn btn-outline">
+          <span>📥</span> Download File Directly
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toastContainer"></div>
 

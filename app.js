@@ -811,19 +811,111 @@ class CapyStudio {
     return canvas;
   }
 
-  async downloadPNG() {
-    try {
-      const canvas = await this.renderPosterCanvas(1536, 2048);
-      if (!canvas) return;
+  openMobileSaveModal(dataUrl, fileName, blob, file) {
+    const modal = document.getElementById("mobileSaveModal");
+    const previewImg = document.getElementById("mobileSaveImg");
+    const btnShare = document.getElementById("btnModalShare");
 
+    if (!modal || !previewImg) return;
+
+    previewImg.src = dataUrl;
+    this.currentExportData = { dataUrl, fileName, blob, file };
+
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      if (btnShare) btnShare.style.display = "flex";
+    } else {
+      if (btnShare) btnShare.style.display = "none";
+    }
+
+    modal.classList.add("active");
+    modal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+  }
+
+  closeMobileSaveModal() {
+    const modal = document.getElementById("mobileSaveModal");
+    if (modal) {
+      modal.classList.remove("active");
+      modal.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    }
+  }
+
+  async downloadPNG() {
+    const btnDownloadPNG = document.getElementById("btnDownloadPNG");
+    const origContent = btnDownloadPNG ? btnDownloadPNG.innerHTML : "";
+
+    try {
+      if (btnDownloadPNG) {
+        btnDownloadPNG.innerHTML = `<span>⏳</span> Generating Image...`;
+        btnDownloadPNG.disabled = true;
+      }
+
+      const canvas = await this.renderPosterCanvas(1536, 2048);
+      if (!canvas) throw new Error("Could not render poster canvas");
+
+      const fileName = `capycool_${this.activeLatamFlag || 'character'}_${Date.now()}.png`;
+      const dataUrl = canvas.toDataURL("image/png");
+
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
+                       (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+
+      // Convert canvas to Blob & File for Web Share / Camera Roll
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+      if (!blob) throw new Error("Canvas blob conversion failed");
+
+      let file = null;
+      try {
+        file = new File([blob], fileName, { type: "image/png" });
+      } catch (e) {
+        console.warn("File constructor not supported, using blob only", e);
+      }
+
+      // On mobile devices, first attempt Web Share with File
+      // On iOS Safari & Android Chrome, this opens the native sheet with "Save Image" to Camera Roll!
+      if (isMobile && file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: "CapyCool",
+            text: "My custom CapyCool character!"
+          });
+          this.showToast("Saved / Shared to Photos! 📸", "success");
+          return;
+        } catch (shareErr) {
+          if (shareErr.name === "AbortError") {
+            // User manually dismissed the share sheet
+            return;
+          }
+          console.warn("navigator.share failed, opening mobile save modal:", shareErr);
+        }
+      }
+
+      // If mobile (or if Web Share failed/unsupported, e.g. Instagram in-app browser or Chrome iOS),
+      // open the dedicated Mobile Save Modal with press & hold instructions:
+      if (isMobile) {
+        this.openMobileSaveModal(dataUrl, fileName, blob, file);
+        return;
+      }
+
+      // Desktop: Instant high-res download
+      const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.download = `capy_cool_vector_${this.activeLatamFlag || 'character'}_${Date.now()}.png`;
-      link.href = canvas.toDataURL("image/png");
+      link.download = fileName;
+      link.href = blobUrl;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
       this.showToast("High-Res PNG Downloaded! 📥", "success");
     } catch (err) {
       console.error("PNG export error:", err);
-      this.showToast("PNG export error. Try downloading SVG.", "error");
+      this.showToast("PNG export error. Please try again.", "error");
+    } finally {
+      if (btnDownloadPNG) {
+        btnDownloadPNG.innerHTML = origContent;
+        btnDownloadPNG.disabled = false;
+      }
     }
   }
 
@@ -1108,6 +1200,64 @@ class CapyStudio {
     const btnCopyClipboard = document.getElementById("btnCopyClipboard");
     if (btnCopyClipboard) {
       btnCopyClipboard.addEventListener("click", () => this.copyToClipboard());
+    }
+
+    // Mobile Save Modal Event Listeners
+    const btnCloseSaveModal = document.getElementById("btnCloseSaveModal");
+    if (btnCloseSaveModal) {
+      btnCloseSaveModal.addEventListener("click", () => this.closeMobileSaveModal());
+    }
+
+    const modalBackdrop = document.getElementById("mobileSaveModal");
+    if (modalBackdrop) {
+      modalBackdrop.addEventListener("click", (e) => {
+        if (e.target === modalBackdrop) {
+          this.closeMobileSaveModal();
+        }
+      });
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        this.closeMobileSaveModal();
+      }
+    });
+
+    const btnModalShare = document.getElementById("btnModalShare");
+    if (btnModalShare) {
+      btnModalShare.addEventListener("click", async () => {
+        if (this.currentExportData?.file && navigator.canShare && navigator.canShare({ files: [this.currentExportData.file] })) {
+          try {
+            await navigator.share({
+              files: [this.currentExportData.file],
+              title: "CapyCool",
+              text: "My custom CapyCool character!"
+            });
+            this.showToast("Saved to Camera Roll / Shared! 📸", "success");
+          } catch (err) {
+            if (err.name !== "AbortError") {
+              console.warn("Share failed:", err);
+            }
+          }
+        }
+      });
+    }
+
+    const btnModalDownloadDirect = document.getElementById("btnModalDownloadDirect");
+    if (btnModalDownloadDirect) {
+      btnModalDownloadDirect.addEventListener("click", () => {
+        if (this.currentExportData?.blob) {
+          const blobUrl = URL.createObjectURL(this.currentExportData.blob);
+          const link = document.createElement("a");
+          link.download = this.currentExportData.fileName || "capycool.png";
+          link.href = blobUrl;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+          this.showToast("File Downloaded! 📥", "success");
+        }
+      });
     }
   }
 }

@@ -230,6 +230,22 @@
 
   </main>
 
+  <!-- Floating Mobile Character Preview (Visible on scroll) -->
+  <aside id="floatingPreview" class="floating-preview" aria-label="Quick character preview - Tap to scroll to image" role="button" tabindex="0" title="Tap to scroll to character">
+    <div class="floating-preview-card">
+      <div class="floating-preview-stage">
+        <!-- Flag background layer for preview -->
+        <div id="floatingLatamBgLayer" class="latam-bg-layer"></div>
+        <!-- Vector character SVG for preview -->
+        <div id="floatingSvgContainer" class="floating-svg-stage"></div>
+      </div>
+      <div class="floating-preview-footer">
+        <span class="floating-preview-label">Tap to view</span>
+        <span class="floating-preview-arrow">▲</span>
+      </div>
+    </div>
+  </aside>
+
   <!-- Mobile Save to Camera Roll Modal -->
   <div id="mobileSaveModal" class="save-modal-backdrop" aria-hidden="true">
     <div class="save-modal-card">

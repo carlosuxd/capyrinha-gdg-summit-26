@@ -144,6 +144,9 @@ class CapyStudio {
 
     this.svgContainer = document.getElementById("svgStageContainer");
     this.canvasWrapper = document.getElementById("canvasWrapper");
+    this.floatingPreview = document.getElementById("floatingPreview");
+    this.floatingSvgContainer = document.getElementById("floatingSvgContainer");
+    this.floatingLatamBgLayer = document.getElementById("floatingLatamBgLayer");
 
     this.init();
   }
@@ -164,6 +167,7 @@ class CapyStudio {
     this.setupSvgUI();
     this.setupSvgPresets();
     this.setupEventListeners();
+    this.setupFloatingPreview();
     this.loadUserSvgPresets();
     this.updateSvgColors();
 
@@ -179,16 +183,32 @@ class CapyStudio {
   }
 
   injectSvgToStage() {
-    if (!this.svgContainer) return;
-    this.svgContainer.innerHTML = this.rawSvgText;
+    if (this.svgContainer) {
+      this.svgContainer.innerHTML = this.rawSvgText;
 
-    const svgEl = this.svgContainer.querySelector("svg");
-    if (svgEl) {
-      svgEl.id = "capySvg";
-      svgEl.setAttribute("preserveAspectRatio", "xMidYMid meet");
-      svgEl.style.width = "100%";
-      svgEl.style.height = "100%";
-      svgEl.style.display = "block";
+      const svgEl = this.svgContainer.querySelector("svg");
+      if (svgEl) {
+        svgEl.id = "capySvg";
+        svgEl.setAttribute("preserveAspectRatio", "xMidYMid meet");
+        svgEl.style.width = "100%";
+        svgEl.style.height = "100%";
+        svgEl.style.display = "block";
+      }
+    }
+
+    if (this.floatingSvgContainer) {
+      // Avoid clip-path ID collisions by renaming in the floating preview copy
+      const floatingText = this.rawSvgText.replace(/clip0_11_2/g, "clip0_11_2_floating");
+      this.floatingSvgContainer.innerHTML = floatingText;
+
+      const fSvgEl = this.floatingSvgContainer.querySelector("svg");
+      if (fSvgEl) {
+        fSvgEl.id = "floatingCapySvg";
+        fSvgEl.setAttribute("preserveAspectRatio", "xMidYMid meet");
+        fSvgEl.style.width = "100%";
+        fSvgEl.style.height = "100%";
+        fSvgEl.style.display = "block";
+      }
     }
   }
 
@@ -210,8 +230,18 @@ class CapyStudio {
   }
 
   updateSvgColors() {
-    const svg = document.getElementById("capySvg");
-    if (!svg) return;
+    const svgs = [document.getElementById("capySvg"), document.getElementById("floatingCapySvg")].filter(Boolean);
+    if (svgs.length === 0) return;
+
+    // Trigger color update pulse on floating preview card if active
+    if (this.floatingPreview && this.floatingPreview.classList.contains("visible")) {
+      const card = this.floatingPreview.querySelector(".floating-preview-card");
+      if (card) {
+        card.classList.remove("preview-pulse");
+        void card.offsetWidth; // force DOM reflow to replay pulse
+        card.classList.add("preview-pulse");
+      }
+    }
 
     // 1. Hoodie & Outerwear
     const hBase = this.svgState.hoodie.base;
@@ -219,16 +249,9 @@ class CapyStudio {
     const hDark = this.adjustColor(hBase, -18);
     const hShadow = this.adjustColor(hBase, -32);
 
-    svg.querySelectorAll("[data-part='hoodie-base']").forEach(el => el.setAttribute("fill", hBase));
-    svg.querySelectorAll("[data-part='hoodie-highlight']").forEach(el => el.setAttribute("fill", hLight));
-    svg.querySelectorAll("[data-part='hoodie-crease']").forEach(el => el.setAttribute("fill", hDark));
-    svg.querySelectorAll("[data-part='hoodie-shadow']").forEach(el => el.setAttribute("fill", hShadow));
-
     // Drawstrings
     const dColor = this.svgState.hoodie.drawstring;
     const dDark = this.adjustColor(dColor, -22);
-    svg.querySelectorAll("[data-part='drawstrings-cord']").forEach(el => el.setAttribute("fill", dColor));
-    svg.querySelectorAll("[data-part='drawstrings-shadow']").forEach(el => el.setAttribute("fill", dDark));
 
     // 2. Pants / Cargo Shorts
     const pBase = this.svgState.pants.base;
@@ -236,66 +259,84 @@ class CapyStudio {
     const pDark = this.adjustColor(pBase, -18);
     const pShadow = this.adjustColor(pBase, -32);
 
-    svg.querySelectorAll("[data-part='pants-base']").forEach(el => el.setAttribute("fill", pBase));
-    svg.querySelectorAll("[data-part='pants-highlight']").forEach(el => el.setAttribute("fill", pLight));
-    svg.querySelectorAll("[data-part='pants-crease']").forEach(el => el.setAttribute("fill", pDark));
-    svg.querySelectorAll("[data-part='pants-shadow']").forEach(el => el.setAttribute("fill", pShadow));
-
     // 3. Footwear / Shoes
     const sBase = this.svgState.shoes.main;
     const sLight = this.adjustColor(sBase, 12);
     const sDark = this.adjustColor(sBase, -20);
-
-    svg.querySelectorAll("[data-part='shoe-main']").forEach(el => el.setAttribute("fill", sBase));
-    svg.querySelectorAll("[data-part='shoe-highlight']").forEach(el => el.setAttribute("fill", sLight));
-    svg.querySelectorAll("[data-part='shoe-crease']").forEach(el => el.setAttribute("fill", sDark));
-    svg.querySelectorAll("[data-part='shoe-soles']").forEach(el => el.setAttribute("fill", this.svgState.shoes.soles));
-    svg.querySelectorAll("[data-part='shoe-laces']").forEach(el => el.setAttribute("fill", this.svgState.shoes.laces));
-
-    // Shoe Side Stripes
     const stripeMode = this.svgState.shoes.stripeMode;
-    const stripes = svg.querySelectorAll("[data-part='shoe-stripes']");
-    if (stripes.length > 0) {
-      if (stripeMode === "rainbow") {
-        const rainbowTints = ["#FCBE2D", "#EF4444", "#3B82F6", "#10B981"];
-        stripes.forEach((el, idx) => {
-          el.setAttribute("fill", rainbowTints[idx % rainbowTints.length]);
-        });
-      } else if (stripeMode === "monochrome") {
-        stripes.forEach(el => el.setAttribute("fill", sLight));
-      } else if (stripeMode === "white") {
-        stripes.forEach(el => el.setAttribute("fill", "#FBFAF6"));
-      } else if (stripeMode === "gold") {
-        stripes.forEach(el => el.setAttribute("fill", "#FBBF24"));
-      }
-    }
 
     // 4. Sunglasses
     const gMode = this.svgState.glasses.mode;
-    const glassesGroup = svg.querySelectorAll("[data-part^='glasses-']");
-    if (gMode === "hidden") {
-      glassesGroup.forEach(el => el.style.display = "none");
-    } else {
-      glassesGroup.forEach(el => el.style.display = "");
-      if (gMode === "solid") {
-        svg.querySelectorAll("[data-part='glasses-frame']").forEach(el => el.setAttribute("fill", this.svgState.glasses.color));
-        svg.querySelectorAll("[data-part='glasses-shadow']").forEach(el => el.setAttribute("fill", this.adjustColor(this.svgState.glasses.color, -25)));
-      } else {
-        const rainbowColors = ["#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6"];
-        svg.querySelectorAll("[data-part='glasses-frame']").forEach((el, idx) => {
-          el.setAttribute("fill", rainbowColors[idx % rainbowColors.length]);
-        });
-      }
-      svg.querySelectorAll("[data-part='glasses-lens']").forEach(el => el.setAttribute("fill", this.svgState.glasses.lens));
-    }
 
     // 5. Fur & Body
     const fBase = this.svgState.fur.base;
     const fDark = this.adjustColor(fBase, -18);
-    svg.querySelectorAll("[data-part='fur-body']").forEach(el => el.setAttribute("fill", fBase));
-    svg.querySelectorAll("[data-part='fur-shadow']").forEach(el => el.setAttribute("fill", fDark));
-    svg.querySelectorAll("[data-part='fur-snout']").forEach(el => el.setAttribute("fill", this.svgState.fur.snout));
-    svg.querySelectorAll("[data-part='fur-blush']").forEach(el => el.setAttribute("fill", this.svgState.fur.blush));
+
+    svgs.forEach(svg => {
+      // 1. Hoodie & Outerwear
+      svg.querySelectorAll("[data-part='hoodie-base']").forEach(el => el.setAttribute("fill", hBase));
+      svg.querySelectorAll("[data-part='hoodie-highlight']").forEach(el => el.setAttribute("fill", hLight));
+      svg.querySelectorAll("[data-part='hoodie-crease']").forEach(el => el.setAttribute("fill", hDark));
+      svg.querySelectorAll("[data-part='hoodie-shadow']").forEach(el => el.setAttribute("fill", hShadow));
+
+      // Drawstrings
+      svg.querySelectorAll("[data-part='drawstrings-cord']").forEach(el => el.setAttribute("fill", dColor));
+      svg.querySelectorAll("[data-part='drawstrings-shadow']").forEach(el => el.setAttribute("fill", dDark));
+
+      // 2. Pants / Cargo Shorts
+      svg.querySelectorAll("[data-part='pants-base']").forEach(el => el.setAttribute("fill", pBase));
+      svg.querySelectorAll("[data-part='pants-highlight']").forEach(el => el.setAttribute("fill", pLight));
+      svg.querySelectorAll("[data-part='pants-crease']").forEach(el => el.setAttribute("fill", pDark));
+      svg.querySelectorAll("[data-part='pants-shadow']").forEach(el => el.setAttribute("fill", pShadow));
+
+      // 3. Footwear / Shoes
+      svg.querySelectorAll("[data-part='shoe-main']").forEach(el => el.setAttribute("fill", sBase));
+      svg.querySelectorAll("[data-part='shoe-highlight']").forEach(el => el.setAttribute("fill", sLight));
+      svg.querySelectorAll("[data-part='shoe-crease']").forEach(el => el.setAttribute("fill", sDark));
+      svg.querySelectorAll("[data-part='shoe-soles']").forEach(el => el.setAttribute("fill", this.svgState.shoes.soles));
+      svg.querySelectorAll("[data-part='shoe-laces']").forEach(el => el.setAttribute("fill", this.svgState.shoes.laces));
+
+      // Shoe Side Stripes
+      const stripes = svg.querySelectorAll("[data-part='shoe-stripes']");
+      if (stripes.length > 0) {
+        if (stripeMode === "rainbow") {
+          const rainbowTints = ["#FCBE2D", "#EF4444", "#3B82F6", "#10B981"];
+          stripes.forEach((el, idx) => {
+            el.setAttribute("fill", rainbowTints[idx % rainbowTints.length]);
+          });
+        } else if (stripeMode === "monochrome") {
+          stripes.forEach(el => el.setAttribute("fill", sLight));
+        } else if (stripeMode === "white") {
+          stripes.forEach(el => el.setAttribute("fill", "#FBFAF6"));
+        } else if (stripeMode === "gold") {
+          stripes.forEach(el => el.setAttribute("fill", "#FBBF24"));
+        }
+      }
+
+      // 4. Sunglasses
+      const glassesGroup = svg.querySelectorAll("[data-part^='glasses-']");
+      if (gMode === "hidden") {
+        glassesGroup.forEach(el => el.style.display = "none");
+      } else {
+        glassesGroup.forEach(el => el.style.display = "");
+        if (gMode === "solid") {
+          svg.querySelectorAll("[data-part='glasses-frame']").forEach(el => el.setAttribute("fill", this.svgState.glasses.color));
+          svg.querySelectorAll("[data-part='glasses-shadow']").forEach(el => el.setAttribute("fill", this.adjustColor(this.svgState.glasses.color, -25)));
+        } else {
+          const rainbowColors = ["#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6"];
+          svg.querySelectorAll("[data-part='glasses-frame']").forEach((el, idx) => {
+            el.setAttribute("fill", rainbowColors[idx % rainbowColors.length]);
+          });
+        }
+        svg.querySelectorAll("[data-part='glasses-lens']").forEach(el => el.setAttribute("fill", this.svgState.glasses.lens));
+      }
+
+      // 5. Fur & Body
+      svg.querySelectorAll("[data-part='fur-body']").forEach(el => el.setAttribute("fill", fBase));
+      svg.querySelectorAll("[data-part='fur-shadow']").forEach(el => el.setAttribute("fill", fDark));
+      svg.querySelectorAll("[data-part='fur-snout']").forEach(el => el.setAttribute("fill", this.svgState.fur.snout));
+      svg.querySelectorAll("[data-part='fur-blush']").forEach(el => el.setAttribute("fill", this.svgState.fur.blush));
+    });
   }
 
   // ==================== LATAM FLAGS SYSTEM ====================
@@ -337,12 +378,13 @@ class CapyStudio {
       select.value = flagId || "none";
     });
 
-    const bgLayer = document.getElementById("latamBgLayer");
-    if (!bgLayer) return;
+    const bgLayers = [document.getElementById("latamBgLayer"), document.getElementById("floatingLatamBgLayer")].filter(Boolean);
 
     if (!flagId) {
-      bgLayer.innerHTML = "";
-      bgLayer.classList.remove("active");
+      bgLayers.forEach(layer => {
+        layer.innerHTML = "";
+        layer.classList.remove("active");
+      });
       this.showToast("Neutral background restored", "info");
       return;
     }
@@ -350,9 +392,13 @@ class CapyStudio {
     const flag = this.latamFlags.find(f => f.id === flagId);
     if (!flag) return;
 
-    bgLayer.innerHTML = flag.svg;
-    bgLayer.classList.add("active");
-    this.canvasWrapper.className = "canvas-wrapper";
+    bgLayers.forEach(layer => {
+      layer.innerHTML = flag.svg;
+      layer.classList.add("active");
+    });
+    if (this.canvasWrapper) {
+      this.canvasWrapper.className = "canvas-wrapper";
+    }
 
     this.showToast(`Stage background set to ${flag.emoji} ${flag.name}!`, "success");
   }
@@ -1355,6 +1401,66 @@ class CapyStudio {
         }
       });
     }
+  }
+
+  setupFloatingPreview() {
+    if (!this.floatingPreview || !this.canvasWrapper) return;
+
+    const checkVisibility = () => {
+      // Only display floating preview on stacked/mobile layout (width <= 1024px)
+      if (window.innerWidth > 1024) {
+        this.floatingPreview.classList.remove("visible");
+        return;
+      }
+
+      const rect = this.canvasWrapper.getBoundingClientRect();
+      // Show when the main character canvas has scrolled up near or past the header
+      const isCanvasHidden = rect.bottom < 80;
+
+      if (isCanvasHidden) {
+        this.floatingPreview.classList.add("visible");
+      } else {
+        this.floatingPreview.classList.remove("visible");
+      }
+    };
+
+    let ticking = false;
+    window.addEventListener("scroll", () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          checkVisibility();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }, { passive: true });
+
+    window.addEventListener("resize", () => {
+      checkVisibility();
+    }, { passive: true });
+
+    // Tap/Click to smoothly scroll up to the character image
+    const handleTapScroll = (e) => {
+      if (e) e.preventDefault();
+      if (navigator.vibrate) {
+        try { navigator.vibrate(12); } catch (_) {}
+      }
+      
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    };
+
+    this.floatingPreview.addEventListener("click", handleTapScroll);
+    this.floatingPreview.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        handleTapScroll(e);
+      }
+    });
+
+    // Run initial visibility check
+    checkVisibility();
   }
 }
 

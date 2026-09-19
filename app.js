@@ -841,35 +841,58 @@ class CapyStudio {
     }
   }
 
-  async downloadPNG() {
-    const btnDownloadPNG = document.getElementById("btnDownloadPNG");
-    const origContent = btnDownloadPNG ? btnDownloadPNG.innerHTML : "";
+  toggleExportDropdown() {
+    const dropdown = document.getElementById("exportDropdown");
+    const toggle = document.getElementById("btnDownloadPNG");
+    if (!dropdown) return;
+    const isExpanded = dropdown.classList.toggle("active");
+    if (toggle) {
+      toggle.setAttribute("aria-expanded", isExpanded ? "true" : "false");
+    }
+  }
+
+  closeExportDropdown() {
+    const dropdown = document.getElementById("exportDropdown");
+    const toggle = document.getElementById("btnDownloadPNG");
+    if (dropdown && dropdown.classList.contains("active")) {
+      dropdown.classList.remove("active");
+      if (toggle) toggle.setAttribute("aria-expanded", "false");
+    }
+  }
+
+  async prepareExportData() {
+    const canvas = await this.renderPosterCanvas(1536, 2048);
+    if (!canvas) throw new Error("Could not render poster canvas");
+
+    const fileName = `capycool_${this.activeLatamFlag || 'character'}_${Date.now()}.png`;
+    const dataUrl = canvas.toDataURL("image/png");
+
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+    if (!blob) throw new Error("Canvas blob conversion failed");
+
+    let file = null;
+    try {
+      file = new File([blob], fileName, { type: "image/png" });
+    } catch (e) {
+      console.warn("File constructor not supported, using blob only", e);
+    }
+
+    return { canvas, blob, file, dataUrl, fileName };
+  }
+
+  async saveToCameraRoll() {
+    const btnToggle = document.getElementById("btnDownloadPNG");
+    const origContent = btnToggle ? btnToggle.innerHTML : "";
 
     try {
-      if (btnDownloadPNG) {
-        btnDownloadPNG.innerHTML = `<span>⏳</span> Generating Image...`;
-        btnDownloadPNG.disabled = true;
+      if (btnToggle) {
+        btnToggle.innerHTML = `<span>⏳</span> Generating... <span class="dropdown-arrow">▼</span>`;
+        btnToggle.disabled = true;
       }
 
-      const canvas = await this.renderPosterCanvas(1536, 2048);
-      if (!canvas) throw new Error("Could not render poster canvas");
-
-      const fileName = `capycool_${this.activeLatamFlag || 'character'}_${Date.now()}.png`;
-      const dataUrl = canvas.toDataURL("image/png");
-
+      const { dataUrl, fileName, blob, file } = await this.prepareExportData();
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
                        (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
-
-      // Convert canvas to Blob & File for Web Share / Camera Roll
-      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
-      if (!blob) throw new Error("Canvas blob conversion failed");
-
-      let file = null;
-      try {
-        file = new File([blob], fileName, { type: "image/png" });
-      } catch (e) {
-        console.warn("File constructor not supported, using blob only", e);
-      }
 
       // On mobile devices, first attempt Web Share with File
       // On iOS Safari & Android Chrome, this opens the native sheet with "Save Image" to Camera Roll!
@@ -880,25 +903,44 @@ class CapyStudio {
             title: "CapyCool",
             text: "My custom CapyCool character!"
           });
-          this.showToast("Saved / Shared to Photos! 📸", "success");
+          this.showToast("Saved to Camera Roll / Shared! 📸", "success");
           return;
         } catch (shareErr) {
           if (shareErr.name === "AbortError") {
-            // User manually dismissed the share sheet
+            // User dismissed share sheet
             return;
           }
-          console.warn("navigator.share failed, opening mobile save modal:", shareErr);
+          console.warn("Web Share failed, opening modal:", shareErr);
         }
       }
 
-      // If mobile (or if Web Share failed/unsupported, e.g. Instagram in-app browser or Chrome iOS),
-      // open the dedicated Mobile Save Modal with press & hold instructions:
-      if (isMobile) {
-        this.openMobileSaveModal(dataUrl, fileName, blob, file);
-        return;
+      // If Web Share is unsupported or failed (or on desktop / in-app browsers):
+      // Open the dedicated save modal with the image and press-and-hold instructions:
+      this.openMobileSaveModal(dataUrl, fileName, blob, file);
+
+    } catch (err) {
+      console.error("Save to Camera Roll error:", err);
+      this.showToast("Could not generate image. Please try again.", "error");
+    } finally {
+      if (btnToggle) {
+        btnToggle.innerHTML = origContent;
+        btnToggle.disabled = false;
+      }
+    }
+  }
+
+  async downloadAsFile() {
+    const btnToggle = document.getElementById("btnDownloadPNG");
+    const origContent = btnToggle ? btnToggle.innerHTML : "";
+
+    try {
+      if (btnToggle) {
+        btnToggle.innerHTML = `<span>⏳</span> Downloading... <span class="dropdown-arrow">▼</span>`;
+        btnToggle.disabled = true;
       }
 
-      // Desktop: Instant high-res download
+      const { blob, fileName } = await this.prepareExportData();
+
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.download = fileName;
@@ -907,16 +949,21 @@ class CapyStudio {
       link.click();
       document.body.removeChild(link);
       setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-      this.showToast("High-Res PNG Downloaded! 📥", "success");
+      this.showToast("File Downloaded! 📥", "success");
+
     } catch (err) {
-      console.error("PNG export error:", err);
-      this.showToast("PNG export error. Please try again.", "error");
+      console.error("Download as file error:", err);
+      this.showToast("Could not download file. Please try again.", "error");
     } finally {
-      if (btnDownloadPNG) {
-        btnDownloadPNG.innerHTML = origContent;
-        btnDownloadPNG.disabled = false;
+      if (btnToggle) {
+        btnToggle.innerHTML = origContent;
+        btnToggle.disabled = false;
       }
     }
+  }
+
+  downloadPNG() {
+    this.toggleExportDropdown();
   }
 
   drawGdgCanvasBanner(ctx, width, height) {
@@ -1184,11 +1231,38 @@ class CapyStudio {
       });
     }
 
-    // Export action
+    // Export Dropdown & Actions
     const btnDownloadPNG = document.getElementById("btnDownloadPNG");
     if (btnDownloadPNG) {
-      btnDownloadPNG.addEventListener("click", () => this.downloadPNG());
+      btnDownloadPNG.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.toggleExportDropdown();
+      });
     }
+
+    const btnOptionCameraRoll = document.getElementById("btnOptionCameraRoll");
+    if (btnOptionCameraRoll) {
+      btnOptionCameraRoll.addEventListener("click", () => {
+        this.closeExportDropdown();
+        this.saveToCameraRoll();
+      });
+    }
+
+    const btnOptionDownloadFile = document.getElementById("btnOptionDownloadFile");
+    if (btnOptionDownloadFile) {
+      btnOptionDownloadFile.addEventListener("click", () => {
+        this.closeExportDropdown();
+        this.downloadAsFile();
+      });
+    }
+
+    // Close dropdown on click outside
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest("#exportDropdown")) {
+        this.closeExportDropdown();
+      }
+    });
+
     const btnDownloadSVG = document.getElementById("btnDownloadSVG");
     if (btnDownloadSVG) {
       btnDownloadSVG.addEventListener("click", () => this.downloadSVG());
@@ -1220,6 +1294,7 @@ class CapyStudio {
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         this.closeMobileSaveModal();
+        this.closeExportDropdown();
       }
     });
 

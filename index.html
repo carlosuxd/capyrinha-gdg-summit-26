@@ -49,11 +49,30 @@
         </div>
       </div>
 
-      <!-- Export Action (Under canvas-wrapper) -->
+      <!-- Export Action Dropdown (Under canvas-wrapper) -->
       <div class="stage-actions">
-        <button id="btnDownloadPNG" class="btn btn-primary">
-          <span>📥</span> Download as PNG
-        </button>
+        <div class="export-dropdown" id="exportDropdown">
+          <button id="btnDownloadPNG" class="btn btn-primary dropdown-toggle" aria-haspopup="true" aria-expanded="false">
+            <span>📥</span> Download as PNG <span class="dropdown-arrow">▼</span>
+          </button>
+          <div class="export-dropdown-menu" id="exportDropdownMenu" role="menu">
+            <button class="dropdown-item" id="btnOptionCameraRoll" role="menuitem">
+              <span class="dropdown-item-icon">📸</span>
+              <div class="dropdown-item-text">
+                <span class="dropdown-item-title">Save to Camera Roll</span>
+                <span class="dropdown-item-desc">Add directly to Photos app</span>
+              </div>
+            </button>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item" id="btnOptionDownloadFile" role="menuitem">
+              <span class="dropdown-item-icon">📁</span>
+              <div class="dropdown-item-text">
+                <span class="dropdown-item-title">Download as File</span>
+                <span class="dropdown-item-desc">Save PNG file to device</span>
+              </div>
+            </button>
+          </div>
+        </div>
       </div>
     </section>
 

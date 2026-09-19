@@ -857,166 +857,23 @@ class CapyStudio {
     return canvas;
   }
 
-  openMobileSaveModal(dataUrl, fileName, blob, file) {
-    const modal = document.getElementById("mobileSaveModal");
-    const previewImg = document.getElementById("mobileSaveImg");
-    const btnShare = document.getElementById("btnModalShare");
-    const btnOpenTab = document.getElementById("btnModalOpenTab");
-
-    if (!modal || !previewImg) return;
-
-    previewImg.src = dataUrl;
-    this.currentExportData = { dataUrl, fileName, blob, file };
-
-    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-      if (btnShare) btnShare.style.display = "flex";
-    } else {
-      if (btnShare) btnShare.style.display = "none";
-    }
-
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || 
-                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    if (btnOpenTab) {
-      btnOpenTab.style.display = isIOS ? "flex" : "none";
-    }
-
-    modal.classList.add("active");
-    modal.setAttribute("aria-hidden", "false");
-    document.body.style.overflow = "hidden";
-  }
-
-  closeMobileSaveModal() {
-    const modal = document.getElementById("mobileSaveModal");
-    if (modal) {
-      modal.classList.remove("active");
-      modal.setAttribute("aria-hidden", "true");
-      document.body.style.overflow = "";
-    }
-  }
-
-  toggleExportDropdown() {
-    const dropdown = document.getElementById("exportDropdown");
-    const toggle = document.getElementById("btnDownloadPNG");
-    if (!dropdown) return;
-    const isExpanded = dropdown.classList.toggle("active");
-    if (toggle) {
-      toggle.setAttribute("aria-expanded", isExpanded ? "true" : "false");
-    }
-  }
-
-  closeExportDropdown() {
-    const dropdown = document.getElementById("exportDropdown");
-    const toggle = document.getElementById("btnDownloadPNG");
-    if (dropdown && dropdown.classList.contains("active")) {
-      dropdown.classList.remove("active");
-      if (toggle) toggle.setAttribute("aria-expanded", "false");
-    }
-  }
-
-  async prepareExportData() {
-    const canvas = await this.renderPosterCanvas(1536, 2048);
-    if (!canvas) throw new Error("Could not render poster canvas");
-
-    const fileName = `capycool_${this.activeLatamFlag || 'character'}_${Date.now()}.png`;
-    const dataUrl = canvas.toDataURL("image/png");
-
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
-    if (!blob) throw new Error("Canvas blob conversion failed");
-
-    let file = null;
-    try {
-      file = new File([blob], fileName, { type: "image/png" });
-    } catch (e) {
-      console.warn("File constructor not supported, using blob only", e);
-    }
-
-    return { canvas, blob, file, dataUrl, fileName };
-  }
-
-  async saveToCameraRoll() {
-    const btnToggle = document.getElementById("btnDownloadPNG");
-    const origContent = btnToggle ? btnToggle.innerHTML : "";
+  async downloadPNG() {
+    const btnDownloadPNG = document.getElementById("btnDownloadPNG");
+    const origContent = btnDownloadPNG ? btnDownloadPNG.innerHTML : "";
 
     try {
-      if (btnToggle) {
-        btnToggle.innerHTML = `<span>⏳</span> Generating... <span class="dropdown-arrow">▼</span>`;
-        btnToggle.disabled = true;
+      if (btnDownloadPNG) {
+        btnDownloadPNG.innerHTML = `<span>⏳</span> Generating Image...`;
+        btnDownloadPNG.disabled = true;
       }
 
-      const { dataUrl, fileName, blob, file } = await this.prepareExportData();
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
-                       (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+      const canvas = await this.renderPosterCanvas(1536, 2048);
+      if (!canvas) throw new Error("Could not render poster canvas");
 
-      // 1. Mobile Native Save Support (Camera Roll):
-      // Check if navigator.canShare is supported with the File object
-      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({
-            files: [file],
-            title: "CapyCool",
-            text: "My custom CapyCool character!"
-          });
-          this.showToast("Saved to Camera Roll / Shared! 📸", "success");
-          return;
-        } catch (shareErr) {
-          // Robust Error Handling: Ignore AbortError if the user cancels the dialog
-          if (shareErr.name === "AbortError") {
-            return;
-          }
-          console.warn("navigator.share failed, falling back:", shareErr);
-        }
-      }
+      const fileName = `capycool_${this.activeLatamFlag || 'character'}_${Date.now()}.png`;
 
-      // If on mobile and Web Share is unsupported/blocked (e.g. Instagram/TikTok in-app WebViews):
-      // Open the save modal so the user can press & hold the image to save directly to Photos
-      if (isMobile) {
-        this.openMobileSaveModal(dataUrl, fileName, blob, file);
-        return;
-      }
-
-      // 2. Fallback Mechanism (e.g., standard desktop browsers):
-      // Temporary <a download> element pointing to URL.createObjectURL(blob)
-      const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.download = fileName;
-      link.href = blobUrl;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-      this.showToast("Image Saved! 📥", "success");
-
-    } catch (err) {
-      console.error("Save to Camera Roll error:", err);
-      this.showToast("Could not save image. Please try again.", "error");
-    } finally {
-      if (btnToggle) {
-        btnToggle.innerHTML = origContent;
-        btnToggle.disabled = false;
-      }
-    }
-  }
-
-  async downloadAsFile() {
-    const btnToggle = document.getElementById("btnDownloadPNG");
-    const origContent = btnToggle ? btnToggle.innerHTML : "";
-
-    try {
-      if (btnToggle) {
-        btnToggle.innerHTML = `<span>⏳</span> Downloading... <span class="dropdown-arrow">▼</span>`;
-        btnToggle.disabled = true;
-      }
-
-      const { dataUrl, blob, fileName, file } = await this.prepareExportData();
-      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || 
-                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-      // On iOS browsers (especially Chrome on iOS), <a download> does not work reliably for blobs.
-      // Automatically open the mobile save modal with clear instructions:
-      if (isIOS) {
-        this.openMobileSaveModal(dataUrl, fileName, blob, file);
-        return;
-      }
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+      if (!blob) throw new Error("Canvas blob conversion failed");
 
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -1026,21 +883,17 @@ class CapyStudio {
       link.click();
       document.body.removeChild(link);
       setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-      this.showToast("File Downloaded! 📥", "success");
+      this.showToast("High-Res PNG Downloaded! 📥", "success");
 
     } catch (err) {
-      console.error("Download as file error:", err);
-      this.showToast("Could not download file. Please try again.", "error");
+      console.error("PNG export error:", err);
+      this.showToast("Could not download PNG. Please try again.", "error");
     } finally {
-      if (btnToggle) {
-        btnToggle.innerHTML = origContent;
-        btnToggle.disabled = false;
+      if (btnDownloadPNG) {
+        btnDownloadPNG.innerHTML = origContent;
+        btnDownloadPNG.disabled = false;
       }
     }
-  }
-
-  downloadPNG() {
-    this.toggleExportDropdown();
   }
 
   drawGdgCanvasBanner(ctx, width, height) {
@@ -1314,66 +1167,11 @@ class CapyStudio {
       });
     }
 
-    // Export Dropdown & Actions
-    const exportDropdown = document.getElementById("exportDropdown");
+    // Export PNG Action
     const btnDownloadPNG = document.getElementById("btnDownloadPNG");
-    const btnOptionCameraRoll = document.getElementById("btnOptionCameraRoll");
-    const btnOptionDownloadFile = document.getElementById("btnOptionDownloadFile");
-
     if (btnDownloadPNG) {
-      const handleToggle = (e) => {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        this.toggleExportDropdown();
-      };
-      btnDownloadPNG.addEventListener("click", handleToggle);
+      btnDownloadPNG.addEventListener("click", () => this.downloadPNG());
     }
-
-    if (btnOptionCameraRoll) {
-      const handleCameraRoll = (e) => {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        this.closeExportDropdown();
-        this.saveToCameraRoll();
-      };
-      btnOptionCameraRoll.addEventListener("click", handleCameraRoll);
-    }
-
-    if (btnOptionDownloadFile) {
-      const handleDownloadFile = (e) => {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        this.closeExportDropdown();
-        this.downloadAsFile();
-      };
-      btnOptionDownloadFile.addEventListener("click", handleDownloadFile);
-    }
-
-    // Stop propagation inside dropdown container so clicks inside do not trigger outside-click
-    if (exportDropdown) {
-      exportDropdown.addEventListener("click", (e) => {
-        e.stopPropagation();
-      });
-    }
-
-    // Close dropdown on click outside
-    document.addEventListener("click", (e) => {
-      if (!e.target.closest("#exportDropdown")) {
-        this.closeExportDropdown();
-      }
-    });
-
-    document.addEventListener("pointerdown", (e) => {
-      if (!e.target.closest("#exportDropdown")) {
-        this.closeExportDropdown();
-      }
-    });
 
     const btnDownloadSVG = document.getElementById("btnDownloadSVG");
     if (btnDownloadSVG) {
@@ -1386,80 +1184,6 @@ class CapyStudio {
     const btnCopyClipboard = document.getElementById("btnCopyClipboard");
     if (btnCopyClipboard) {
       btnCopyClipboard.addEventListener("click", () => this.copyToClipboard());
-    }
-
-    // Mobile Save Modal Event Listeners
-    const btnCloseSaveModal = document.getElementById("btnCloseSaveModal");
-    if (btnCloseSaveModal) {
-      btnCloseSaveModal.addEventListener("click", () => this.closeMobileSaveModal());
-    }
-
-    const modalBackdrop = document.getElementById("mobileSaveModal");
-    if (modalBackdrop) {
-      modalBackdrop.addEventListener("click", (e) => {
-        if (e.target === modalBackdrop) {
-          this.closeMobileSaveModal();
-        }
-      });
-    }
-
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        this.closeMobileSaveModal();
-        this.closeExportDropdown();
-      }
-    });
-
-    const btnModalShare = document.getElementById("btnModalShare");
-    if (btnModalShare) {
-      btnModalShare.addEventListener("click", async () => {
-        if (this.currentExportData?.file && navigator.canShare && navigator.canShare({ files: [this.currentExportData.file] })) {
-          try {
-            await navigator.share({
-              files: [this.currentExportData.file],
-              title: "CapyCool",
-              text: "My custom CapyCool character!"
-            });
-            this.showToast("Saved to Camera Roll / Shared! 📸", "success");
-          } catch (err) {
-            if (err.name !== "AbortError") {
-              console.warn("Share failed:", err);
-            }
-          }
-        }
-      });
-    }
-
-    const btnModalOpenTab = document.getElementById("btnModalOpenTab");
-    if (btnModalOpenTab) {
-      btnModalOpenTab.addEventListener("click", () => {
-        if (this.currentExportData?.dataUrl) {
-          const newWin = window.open();
-          if (newWin) {
-            newWin.document.write(`<title>CapyCool Character</title><style>body{margin:0;background:#191923;display:flex;align-items:center;justify-content:center;min-height:100vh;}img{max-width:100%;max-height:100vh;object-fit:contain;}</style><img src="${this.currentExportData.dataUrl}" alt="CapyCool Character" />`);
-            newWin.document.close();
-          } else {
-            window.location.href = this.currentExportData.dataUrl;
-          }
-        }
-      });
-    }
-
-    const btnModalDownloadDirect = document.getElementById("btnModalDownloadDirect");
-    if (btnModalDownloadDirect) {
-      btnModalDownloadDirect.addEventListener("click", () => {
-        if (this.currentExportData?.blob) {
-          const blobUrl = URL.createObjectURL(this.currentExportData.blob);
-          const link = document.createElement("a");
-          link.download = this.currentExportData.fileName || "capycool.png";
-          link.href = blobUrl;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-          this.showToast("File Downloaded! 📥", "success");
-        }
-      });
     }
   }
 

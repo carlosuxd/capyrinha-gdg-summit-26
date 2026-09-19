@@ -523,32 +523,6 @@ class CapyStudio {
       });
     }
 
-    // Fur Swatches
-    const furSwatches = [
-      { name: "Capy Classic", hex: "#EF8241" },
-      { name: "Golden Caramel", hex: "#F59E0B" },
-      { name: "Chocolate Brown", hex: "#8B5A3C" },
-      { name: "Albino Cream", hex: "#F5F0E6" },
-      { name: "Midnight Charcoal", hex: "#2D3139" }
-    ];
-
-    const fContainer = document.getElementById("svgFurSwatches");
-    if (fContainer) {
-      fContainer.innerHTML = "";
-      furSwatches.forEach(sw => {
-        const btn = document.createElement("button");
-        btn.className = "swatch-btn";
-        btn.style.backgroundColor = sw.hex;
-        btn.title = sw.name;
-        btn.addEventListener("click", () => {
-          this.svgState.fur.base = sw.hex;
-          document.getElementById("svgFurPicker").value = sw.hex;
-          this.updateSvgColors();
-        });
-        fContainer.appendChild(btn);
-      });
-    }
-
     // Sunglasses Swatches
     const gContainer = document.getElementById("svgGlassesSwatches");
     if (gContainer) {
@@ -619,21 +593,6 @@ class CapyStudio {
       this.svgState.glasses.lens = e.target.value;
       this.updateSvgColors();
     });
-
-    document.getElementById("svgFurPicker").addEventListener("input", (e) => {
-      this.svgState.fur.base = e.target.value;
-      this.updateSvgColors();
-    });
-
-    document.getElementById("svgSnoutPicker").addEventListener("input", (e) => {
-      this.svgState.fur.snout = e.target.value;
-      this.updateSvgColors();
-    });
-
-    document.getElementById("svgBlushPicker").addEventListener("input", (e) => {
-      this.svgState.fur.blush = e.target.value;
-      this.updateSvgColors();
-    });
   }
 
   // ==================== PRESETS SYSTEM ====================
@@ -676,9 +635,6 @@ class CapyStudio {
     document.getElementById("svgGlassesMode").value = this.svgState.glasses.mode;
     document.getElementById("svgGlassesColorPicker").value = this.svgState.glasses.color;
     document.getElementById("svgLensPicker").value = this.svgState.glasses.lens;
-    document.getElementById("svgFurPicker").value = this.svgState.fur.base;
-    document.getElementById("svgSnoutPicker").value = this.svgState.fur.snout;
-    document.getElementById("svgBlushPicker").value = this.svgState.fur.blush;
 
     const isSolidGlasses = this.svgState.glasses.mode === "solid";
     document.getElementById("svgGlassesColorRow").style.display = isSolidGlasses ? "flex" : "none";
@@ -1068,7 +1024,7 @@ class CapyStudio {
         this.svgState.hoodie.base,
         this.svgState.pants.base,
         this.svgState.shoes.main,
-        this.svgState.fur.base
+        this.svgState.glasses.color
       ];
 
       swatches.forEach((color, i) => {

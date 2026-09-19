@@ -82,9 +82,6 @@
           <button class="tab-btn active" data-svgtab="clothes">
             <span>👕</span> Clothes & Colors
           </button>
-          <button class="tab-btn" data-svgtab="accessories">
-            <span>🕶️</span> Details & Shades
-          </button>
           <button class="tab-btn" data-svgtab="presets">
             <span>⭐</span> Presets
           </button>
@@ -121,7 +118,30 @@
               </button>
             </div>
 
-            <!-- 2. Hoodie / Outerwear Section -->
+            <!-- 2. Sunglasses Section (Moved under background section) -->
+            <div class="vector-section-card" id="sectionGlasses">
+              <div class="vector-card-title">
+                <span>🕶️ Multi-Color Sunglasses</span>
+                <select id="svgGlassesMode" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.74rem;">
+                  <option value="rainbow">🌈 Rainbow Multi-Color</option>
+                  <option value="solid">🎨 Solid Color</option>
+                  <option value="hidden">❌ Off (Show Eyes)</option>
+                </select>
+              </div>
+
+              <div id="svgGlassesColorRow" class="vector-row" style="display: none;">
+                <label>Frame Color:</label>
+                <input type="color" id="svgGlassesColorPicker" class="picker-input" value="#2572C0">
+              </div>
+              <div class="palette-swatches" id="svgGlassesSwatches" style="display: none;"></div>
+
+              <div class="vector-row" style="margin-top: 10px;">
+                <label>Dark Lenses Tint:</label>
+                <input type="color" id="svgLensPicker" class="picker-input" value="#36383F" style="width: 28px; height: 28px;">
+              </div>
+            </div>
+
+            <!-- 3. Hoodie / Outerwear Section -->
             <div class="vector-section-card">
               <div class="vector-card-title">
                 <span>🧥 Hoodie / Outerwear</span>
@@ -181,54 +201,7 @@
 
           </div>
 
-          <!-- TAB 2: DETAILS & ACCESSORIES -->
-          <div class="tab-pane" id="svgtab-accessories">
-            
-            <!-- Sunglasses -->
-            <div class="vector-section-card">
-              <div class="vector-card-title">
-                <span>🕶️ Multi-Color Sunglasses</span>
-                <select id="svgGlassesMode" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.74rem;">
-                  <option value="rainbow">🌈 Rainbow Multi-Color</option>
-                  <option value="solid">🎨 Solid Color</option>
-                  <option value="hidden">❌ Off (Show Eyes)</option>
-                </select>
-              </div>
-
-              <div id="svgGlassesColorRow" class="vector-row" style="display: none;">
-                <label>Frame Color:</label>
-                <input type="color" id="svgGlassesColorPicker" class="picker-input" value="#2572C0">
-              </div>
-              <div class="palette-swatches" id="svgGlassesSwatches" style="display: none;"></div>
-
-              <div class="vector-row" style="margin-top: 10px;">
-                <label>Dark Lenses Tint:</label>
-                <input type="color" id="svgLensPicker" class="picker-input" value="#36383F" style="width: 28px; height: 28px;">
-              </div>
-            </div>
-
-            <!-- Capybara Fur & Body -->
-            <div class="vector-section-card">
-              <div class="vector-card-title">
-                <span>🦫 Capybara Fur & Skin Tone</span>
-                <input type="color" id="svgFurPicker" class="picker-input" value="#EF8241">
-              </div>
-              <div class="palette-swatches" id="svgFurSwatches"></div>
-
-              <div class="vector-row" style="margin-top: 10px;">
-                <label>Snout / Muzzle Shade:</label>
-                <input type="color" id="svgSnoutPicker" class="picker-input" value="#B86342" style="width: 28px; height: 28px;">
-              </div>
-
-              <div class="vector-row">
-                <label>Cute Cheeks Blush:</label>
-                <input type="color" id="svgBlushPicker" class="picker-input" value="#F23A34" style="width: 28px; height: 28px;">
-              </div>
-            </div>
-
-          </div>
-
-          <!-- TAB 3: SVG PRESETS -->
+          <!-- TAB 2: SVG PRESETS -->
           <div class="tab-pane" id="svgtab-presets">
             <div class="category-group">
               <span class="category-title">⭐ Featured Vector Looks</span>

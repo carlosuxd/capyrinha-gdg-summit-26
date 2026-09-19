@@ -31,7 +31,7 @@ const SVG_BUILTIN_PRESETS = [
     state: {
       hoodie: { base: "#2572C0", drawstring: "#FBFAF6" },
       pants: { base: "#338D52" },
-      shoes: { main: "#D7413D", stripeMode: "rainbow", soles: "#EEEDEA", laces: "#FBFAF6" },
+      shoes: { main: "#D7413D", stripeMode: "rainbow", soles: "#FFFFFF", laces: "#FBFAF6" },
       glasses: { mode: "rainbow", color: "#2572C0", lens: "#36383F" },
       fur: { base: "#EF8241", snout: "#B86342", blush: "#F23A34" }
     }
@@ -43,7 +43,7 @@ const SVG_BUILTIN_PRESETS = [
     state: {
       hoodie: { base: "#DE3D32", drawstring: "#FCBE2D" },
       pants: { base: "#26292E" },
-      shoes: { main: "#DE3D32", stripeMode: "gold", soles: "#EEEDEA", laces: "#FCBE2D" },
+      shoes: { main: "#DE3D32", stripeMode: "gold", soles: "#FFFFFF", laces: "#FCBE2D" },
       glasses: { mode: "solid", color: "#DE3D32", lens: "#26292E" },
       fur: { base: "#EF8241", snout: "#B86342", blush: "#F23A34" }
     }
@@ -67,7 +67,7 @@ const SVG_BUILTIN_PRESETS = [
     state: {
       hoodie: { base: "#5B683E", drawstring: "#CEBA8A" },
       pants: { base: "#CEBA8A" },
-      shoes: { main: "#8B5A3C", stripeMode: "white", soles: "#EEEDEA", laces: "#FBFAF6" },
+      shoes: { main: "#8B5A3C", stripeMode: "white", soles: "#FFFFFF", laces: "#FBFAF6" },
       glasses: { mode: "solid", color: "#5B683E", lens: "#2D3421" },
       fur: { base: "#EF8241", snout: "#B86342", blush: "#F23A34" }
     }
@@ -79,7 +79,7 @@ const SVG_BUILTIN_PRESETS = [
     state: {
       hoodie: { base: "#4F738E", drawstring: "#FBFAF6" },
       pants: { base: "#9EA2A7" },
-      shoes: { main: "#FFFFFF", stripeMode: "white", soles: "#EEEDEA", laces: "#4F738E" },
+      shoes: { main: "#FFFFFF", stripeMode: "white", soles: "#FFFFFF", laces: "#4F738E" },
       glasses: { mode: "solid", color: "#4F738E", lens: "#36383F" },
       fur: { base: "#E09353", snout: "#AD6935", blush: "#F23A34" }
     }
@@ -91,7 +91,7 @@ const SVG_BUILTIN_PRESETS = [
     state: {
       hoodie: { base: "#9D84C7", drawstring: "#FBFAF6" },
       pants: { base: "#3B4D68" },
-      shoes: { main: "#9D84C7", stripeMode: "white", soles: "#EEEDEA", laces: "#FBFAF6" },
+      shoes: { main: "#9D84C7", stripeMode: "white", soles: "#FFFFFF", laces: "#FBFAF6" },
       glasses: { mode: "hidden", color: "#9D84C7", lens: "#36383F" },
       fur: { base: "#F09B5E", snout: "#BA6F3B", blush: "#FF6B8B" }
     }
@@ -123,7 +123,7 @@ class CapyStudio {
       shoes: {
         main: "#D7413D",
         stripeMode: "rainbow",
-        soles: "#EEEDEA",
+        soles: "#FFFFFF",
         laces: "#FBFAF6"
       },
       glasses: {

@@ -188,7 +188,6 @@ class CapyStudio {
       svgEl.setAttribute("preserveAspectRatio", "xMidYMid meet");
       svgEl.style.width = "100%";
       svgEl.style.height = "100%";
-      svgEl.style.maxHeight = "540px";
       svgEl.style.display = "block";
     }
   }
@@ -772,20 +771,28 @@ class CapyStudio {
     const svgEl = document.getElementById("capySvg");
     if (!svgEl) return;
 
-    let svgToExport = svgEl;
+    let svgToExport = svgEl.cloneNode(true);
+    
+    // Ensure top region has white background in exported SVG
+    const whiteTop = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    whiteTop.setAttribute("width", "768");
+    whiteTop.setAttribute("height", "750");
+    whiteTop.setAttribute("fill", "#FFFFFF");
+    svgToExport.insertBefore(whiteTop, svgToExport.firstChild);
+
     if (this.activeLatamFlag) {
       const flag = this.latamFlags.find(f => f.id === this.activeLatamFlag);
       if (flag) {
-        svgToExport = svgEl.cloneNode(true);
         const parser = new DOMParser();
         const flagDoc = parser.parseFromString(flag.svg, "image/svg+xml");
         const flagSvg = flagDoc.querySelector("svg");
         if (flagSvg) {
-          flagSvg.setAttribute("width", "100%");
-          flagSvg.setAttribute("height", "100%");
+          flagSvg.setAttribute("width", "768");
+          flagSvg.setAttribute("height", "750");
           flagSvg.setAttribute("x", "0");
           flagSvg.setAttribute("y", "0");
-          svgToExport.insertBefore(flagSvg, svgToExport.firstChild);
+          flagSvg.setAttribute("preserveAspectRatio", "xMidYMid slice");
+          whiteTop.insertAdjacentElement("afterend", flagSvg);
         }
       }
     }
@@ -800,12 +807,12 @@ class CapyStudio {
     this.showToast(this.activeLatamFlag ? "Vector SVG with Flag Downloaded! ⚡" : "Vector SVG Downloaded! ⚡", "success");
   }
 
-  async downloadPNG() {
+  async renderPosterCanvas(width = 1536, height = 2048) {
     if (document.fonts?.ready) {
       await document.fonts.ready;
     }
-    const flag = this.latamFlags.find(f => f.id === this.activeLatamFlag);
 
+    const flag = this.latamFlags.find(f => f.id === this.activeLatamFlag);
     const loadFlagImage = () => {
       return new Promise((resolve) => {
         if (!flag) return resolve(null);
@@ -822,71 +829,106 @@ class CapyStudio {
     };
 
     const svgEl = document.getElementById("capySvg");
-    if (!svgEl) return;
+    if (!svgEl) return null;
+
+    // Clone SVG and remove the text banner from SVG so it gets rendered crisply by Canvas 2D
+    const svgClone = svgEl.cloneNode(true);
+    const svgBanner = svgClone.querySelector("#gdg-bottom-banner");
+    if (svgBanner) {
+      svgBanner.remove();
+    }
 
     const serializer = new XMLSerializer();
-    const svgString = serializer.serializeToString(svgEl);
+    const svgString = serializer.serializeToString(svgClone);
     const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(svgBlob);
 
-    const flagData = await loadFlagImage();
-    const img = new Image();
-    img.onload = () => {
-      const offCanvas = document.createElement("canvas");
-      offCanvas.width = 926;
-      offCanvas.height = 1630;
-      const oCtx = offCanvas.getContext("2d");
-      if (flagData) {
-        oCtx.drawImage(flagData.img, 0, 0, offCanvas.width, offCanvas.height);
-        URL.revokeObjectURL(flagData.url);
-      }
-      oCtx.drawImage(img, 0, 0, offCanvas.width, offCanvas.height);
-      URL.revokeObjectURL(url);
+    const [flagData, charImg] = await Promise.all([
+      loadFlagImage(),
+      new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve({ img, url });
+        img.onerror = (e) => {
+          URL.revokeObjectURL(url);
+          reject(e);
+        };
+        img.src = url;
+      })
+    ]);
 
-      // Render crisp GDG Summit Latam 2026 banner with Google Sans
-      this.drawGdgCanvasBanner(oCtx, offCanvas.width, offCanvas.height);
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+
+    // 1. Top white region (y=0 to 750 / 1024)
+    const splitY = Math.round((750 / 1024) * height);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, width, splitY);
+
+    // 1b. Flag in the white area
+    if (flagData) {
+      ctx.drawImage(flagData.img, 0, 0, width, splitY);
+      URL.revokeObjectURL(flagData.url);
+    }
+
+    // 2. Bottom dark background (y=splitY to height, #191923) - drawn BEFORE the character!
+    ctx.fillStyle = "#191923";
+    ctx.fillRect(0, splitY, width, height - splitY);
+
+    // 3. Draw Character on top! Feet step into the dark background and are 100% visible
+    ctx.drawImage(charImg.img, 0, 0, width, height);
+    URL.revokeObjectURL(charImg.url);
+
+    // 4. Draw Google Sans GDG Banner text only (never fill a background over the character)
+    this.drawGdgCanvasBanner(ctx, width, height);
+
+    return canvas;
+  }
+
+  async downloadPNG() {
+    try {
+      const canvas = await this.renderPosterCanvas(1536, 2048);
+      if (!canvas) return;
 
       const link = document.createElement("a");
       link.download = `capy_cool_vector_${this.activeLatamFlag || 'character'}_${Date.now()}.png`;
-      link.href = offCanvas.toDataURL("image/png");
+      link.href = canvas.toDataURL("image/png");
       link.click();
       this.showToast("High-Res PNG Downloaded! 📥", "success");
-    };
-    img.src = url;
+    } catch (err) {
+      console.error("PNG export error:", err);
+      this.showToast("PNG export error. Try downloading SVG.", "error");
+    }
   }
 
   drawGdgCanvasBanner(ctx, width, height) {
-    const bannerY = Math.round((748 / 815) * height);
-    const bannerH = height - bannerY;
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(0, bannerY, width, bannerH);
-
-    // Letter color cycle: Yellow (#FBBC04), Green (#34A853), Red (#EA4335), Blue (#4285F4)
+    // Letter color cycle matching reference image:
     const letterSequence = [
-      { char: "G", color: "#FBBC04" },
-      { char: "D", color: "#34A853" },
-      { char: "G", color: "#EA4335" },
+      { char: "G", color: "#FFB900" },
+      { char: "D", color: "#00AB49" },
+      { char: "G", color: "#FE2B27" },
       { char: " ", color: "transparent" },
-      { char: "S", color: "#4285F4" },
-      { char: "u", color: "#FBBC04" },
-      { char: "m", color: "#34A853" },
-      { char: "m", color: "#EA4335" },
-      { char: "i", color: "#4285F4" },
-      { char: "t", color: "#FBBC04" },
+      { char: "S", color: "#1E88FD" },
+      { char: "u", color: "#FFB900" },
+      { char: "m", color: "#00AB49" },
+      { char: "m", color: "#FE2B27" },
+      { char: "i", color: "#1E88FD" },
+      { char: "t", color: "#FFB900" },
       { char: " ", color: "transparent" },
-      { char: "L", color: "#34A853" },
-      { char: "a", color: "#EA4335" },
-      { char: "t", color: "#4285F4" },
-      { char: "a", color: "#FBBC04" },
-      { char: "m", color: "#34A853" },
+      { char: "L", color: "#00AB49" },
+      { char: "a", color: "#FE2B27" },
+      { char: "t", color: "#1E88FD" },
+      { char: "a", color: "#FFB900" },
+      { char: "m", color: "#00AB49" },
       { char: " ", color: "transparent" },
-      { char: "2", color: "#EA4335" },
-      { char: "0", color: "#4285F4" },
-      { char: "2", color: "#FBBC04" },
-      { char: "6", color: "#34A853" }
+      { char: "2", color: "#FE2B27" },
+      { char: "0", color: "#1E88FD" },
+      { char: "2", color: "#FFB900" },
+      { char: "6", color: "#00AB49" }
     ];
 
-    const fontSize = Math.round(bannerH * 0.35);
+    const fontSize = Math.round((34 / 1024) * height);
     ctx.font = `bold ${fontSize}px 'Google Sans', -apple-system, BlinkMacSystemFont, sans-serif`;
     ctx.textBaseline = "middle";
 
@@ -896,7 +938,7 @@ class CapyStudio {
     }
 
     let startX = (width - totalWidth) / 2;
-    const centerY = bannerY + bannerH / 2;
+    const centerY = Math.round((955 / 1024) * height);
 
     for (const item of letterSequence) {
       if (item.char !== " ") {
@@ -909,12 +951,25 @@ class CapyStudio {
 
   async copyToClipboard() {
     try {
+      const canvas = await this.renderPosterCanvas(1536, 2048);
+      if (canvas && navigator.clipboard && window.ClipboardItem) {
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+        if (blob) {
+          await navigator.clipboard.write([
+            new ClipboardItem({ "image/png": blob })
+          ]);
+          this.showToast("High-Res PNG image copied to clipboard! 📋", "success");
+          return;
+        }
+      }
+      // Fallback to SVG markup
       const svgEl = document.getElementById("capySvg");
-      if (!svgEl) return;
-      const serializer = new XMLSerializer();
-      const svgString = serializer.serializeToString(svgEl);
-      await navigator.clipboard.writeText(svgString);
-      this.showToast("Vector SVG markup copied to clipboard! 📋", "success");
+      if (svgEl) {
+        const serializer = new XMLSerializer();
+        const svgString = serializer.serializeToString(svgEl);
+        await navigator.clipboard.writeText(svgString);
+        this.showToast("Vector SVG copied to clipboard! 📋", "success");
+      }
     } catch (err) {
       console.error(err);
       this.showToast("Clipboard copy failed. Try downloading instead.", "error");
@@ -970,15 +1025,25 @@ class CapyStudio {
     const flagData = await loadFlagImage();
 
     const renderCardBody = (sourceImg) => {
-      // Character Portrait Box
-      cCtx.fillStyle = "#ffffff";
-      cCtx.fillRect(100, 200, 800, 860);
+      // Character Portrait Box (3:4 ratio matching poster image)
+      const pW = 660;
+      const pH = 880;
+      const pX = (1000 - pW) / 2;
+      const pY = 190;
+      const splitH = Math.round((750 / 1024) * pH);
+
+      cCtx.fillStyle = "#FFFFFF";
+      cCtx.fillRect(pX, pY, pW, splitH);
 
       if (flagData) {
-        cCtx.drawImage(flagData.img, 100, 200, 800, 860);
+        cCtx.drawImage(flagData.img, pX, pY, pW, splitH);
         URL.revokeObjectURL(flagData.url);
       }
-      cCtx.drawImage(sourceImg, 100, 200, 800, 860);
+
+      cCtx.fillStyle = "#191923";
+      cCtx.fillRect(pX, pY + splitH, pW, pH - splitH);
+
+      cCtx.drawImage(sourceImg, pX, pY, pW, pH);
 
       // Bottom Stats & Specs
       cCtx.fillStyle = "#ffffff";
@@ -1031,7 +1096,6 @@ class CapyStudio {
       renderCardBody(img);
       URL.revokeObjectURL(url);
     };
-    img.src = url;
   }
 
   randomizeColors() {

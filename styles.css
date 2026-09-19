@@ -281,33 +281,6 @@ body {
   display: block;
 }
 
-.stage-pills {
-  margin-top: 16px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-  max-width: 580px;
-}
-
-.pill-item {
-  background: rgba(34, 40, 56, 0.85);
-  border: 1px solid var(--border-color);
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.76rem;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.pill-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--accent);
-}
-
 .stage-actions {
   display: flex;
   gap: 12px;

@@ -296,35 +296,6 @@ class CapyStudio {
     svg.querySelectorAll("[data-part='fur-shadow']").forEach(el => el.setAttribute("fill", fDark));
     svg.querySelectorAll("[data-part='fur-snout']").forEach(el => el.setAttribute("fill", this.svgState.fur.snout));
     svg.querySelectorAll("[data-part='fur-blush']").forEach(el => el.setAttribute("fill", this.svgState.fur.blush));
-
-    this.updateSvgPills();
-  }
-
-  updateSvgPills() {
-    const container = document.getElementById("equippedPills");
-    if (!container) return;
-    container.innerHTML = "";
-
-    const items = [
-      { name: "Hoodie", val: this.svgState.hoodie.base },
-      { name: "Pants", val: this.svgState.pants.base },
-      { name: "Shoes", val: this.svgState.shoes.main },
-      { name: "Glasses", val: this.svgState.glasses.mode === "hidden" ? "Off" : this.svgState.glasses.mode.toUpperCase() }
-    ];
-
-    if (this.activeLatamFlag) {
-      const flag = this.latamFlags.find(f => f.id === this.activeLatamFlag);
-      if (flag) {
-        items.unshift({ name: "Flag", val: `${flag.emoji} ${flag.name}` });
-      }
-    }
-
-    items.forEach(p => {
-      const pill = document.createElement("div");
-      pill.className = "pill-item";
-      pill.innerHTML = `<span class="pill-dot"></span><strong>${p.name}:</strong> ${p.val}`;
-      container.appendChild(pill);
-    });
   }
 
   // ==================== LATAM FLAGS SYSTEM ====================
@@ -372,7 +343,6 @@ class CapyStudio {
     if (!flagId) {
       bgLayer.innerHTML = "";
       bgLayer.classList.remove("active");
-      this.updateSvgPills();
       this.showToast("Neutral background restored", "info");
       return;
     }
@@ -384,7 +354,6 @@ class CapyStudio {
     bgLayer.classList.add("active");
     this.canvasWrapper.className = "canvas-wrapper";
 
-    this.updateSvgPills();
     this.showToast(`Stage background set to ${flag.emoji} ${flag.name}!`, "success");
   }
 

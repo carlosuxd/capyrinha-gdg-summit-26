@@ -1092,11 +1092,23 @@ class CapyStudio {
       });
     }
 
-    // Export buttons
-    document.getElementById("btnDownloadPNG").addEventListener("click", () => this.downloadPNG());
-    document.getElementById("btnDownloadSVG").addEventListener("click", () => this.downloadSVG());
-    document.getElementById("btnExportCard").addEventListener("click", () => this.exportCharacterCard());
-    document.getElementById("btnCopyClipboard").addEventListener("click", () => this.copyToClipboard());
+    // Export action
+    const btnDownloadPNG = document.getElementById("btnDownloadPNG");
+    if (btnDownloadPNG) {
+      btnDownloadPNG.addEventListener("click", () => this.downloadPNG());
+    }
+    const btnDownloadSVG = document.getElementById("btnDownloadSVG");
+    if (btnDownloadSVG) {
+      btnDownloadSVG.addEventListener("click", () => this.downloadSVG());
+    }
+    const btnExportCard = document.getElementById("btnExportCard");
+    if (btnExportCard) {
+      btnExportCard.addEventListener("click", () => this.exportCharacterCard());
+    }
+    const btnCopyClipboard = document.getElementById("btnCopyClipboard");
+    if (btnCopyClipboard) {
+      btnCopyClipboard.addEventListener("click", () => this.copyToClipboard());
+    }
   }
 }
 

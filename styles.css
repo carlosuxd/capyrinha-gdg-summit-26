@@ -175,26 +175,15 @@ body {
     height: auto;
     overflow: visible;
   }
-
-  .stage-section {
-    flex-direction: column !important;
-    gap: 16px !important;
-  }
-
-  .stage-actions {
-    flex-direction: row !important;
-    flex-wrap: wrap !important;
-    margin-top: 16px !important;
-  }
 }
 
 /* Stage / Canvas Section */
 .stage-section {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 32px;
+  gap: 16px;
   padding: 24px;
   position: relative;
   background: radial-gradient(circle at center, #1e2433 0%, #12151c 100%);
@@ -295,10 +284,21 @@ body {
 
 .stage-actions {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 210px;
   justify-content: center;
+  width: 100%;
+  max-width: 430px;
+}
+
+.stage-actions .btn {
+  width: 100%;
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 4px 14px rgba(255, 107, 74, 0.35);
 }
 
 /* Sidebar Section */

@@ -894,9 +894,9 @@ class CapyStudio {
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
                        (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
 
-      // On mobile devices, first attempt Web Share with File
-      // On iOS Safari & Android Chrome, this opens the native sheet with "Save Image" to Camera Roll!
-      if (isMobile && file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      // 1. Mobile Native Save Support (Camera Roll):
+      // Check if navigator.canShare is supported with the File object
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({
             files: [file],
@@ -906,21 +906,36 @@ class CapyStudio {
           this.showToast("Saved to Camera Roll / Shared! 📸", "success");
           return;
         } catch (shareErr) {
+          // Robust Error Handling: Ignore AbortError if the user cancels the dialog
           if (shareErr.name === "AbortError") {
-            // User dismissed share sheet
             return;
           }
-          console.warn("Web Share failed, opening modal:", shareErr);
+          console.warn("navigator.share failed, falling back:", shareErr);
         }
       }
 
-      // If Web Share is unsupported or failed (or on desktop / in-app browsers):
-      // Open the dedicated save modal with the image and press-and-hold instructions:
-      this.openMobileSaveModal(dataUrl, fileName, blob, file);
+      // If on mobile and Web Share is unsupported/blocked (e.g. Instagram/TikTok in-app WebViews):
+      // Open the save modal so the user can press & hold the image to save directly to Photos
+      if (isMobile) {
+        this.openMobileSaveModal(dataUrl, fileName, blob, file);
+        return;
+      }
+
+      // 2. Fallback Mechanism (e.g., standard desktop browsers):
+      // Temporary <a download> element pointing to URL.createObjectURL(blob)
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.download = fileName;
+      link.href = blobUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+      this.showToast("Image Saved! 📥", "success");
 
     } catch (err) {
       console.error("Save to Camera Roll error:", err);
-      this.showToast("Could not generate image. Please try again.", "error");
+      this.showToast("Could not save image. Please try again.", "error");
     } finally {
       if (btnToggle) {
         btnToggle.innerHTML = origContent;

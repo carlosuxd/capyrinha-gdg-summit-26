@@ -21,16 +21,6 @@
         <p>by <a href="https://www.instagram.com/ux.carlos" target="_blank" rel="noopener noreferrer">@ux.carlos</a></p>
       </div>
     </div>
-
-    <!-- Header Actions -->
-    <div class="header-actions">
-      <button id="btnRandomize" class="btn btn-outline" title="Randomize Colors">
-        <span>🎲</span> Randomize
-      </button>
-      <button id="btnResetAll" class="btn btn-outline" title="Reset to Original Look">
-        <span>🔄</span> Reset
-      </button>
-    </div>
   </header>
 
   <!-- Main Workspace -->
@@ -95,9 +85,19 @@
           
           <!-- TAB 1: CLOTHES & COLORS -->
           <div class="tab-pane active" id="svgtab-clothes">
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">
               Customize the vector colors of Capy-Cool's clothes with real-time 3D highlights, shadows, and creases!
             </p>
+
+            <!-- Quick Actions: Randomize & Reset -->
+            <div class="clothes-quick-actions">
+              <button id="btnRandomize" class="btn btn-outline" title="Randomize Colors">
+                <span>🎲</span> Randomize
+              </button>
+              <button id="btnResetAll" class="btn btn-outline" title="Reset to Original Look">
+                <span>🔄</span> Reset
+              </button>
+            </div>
 
             <!-- 1. Background Flag (LATAM) Section -->
             <div class="vector-section-card" id="sectionLatamFlag">

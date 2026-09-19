@@ -1230,9 +1230,15 @@ class CapyStudio {
       });
     });
 
-    // Header Actions
-    document.getElementById("btnRandomize").addEventListener("click", () => this.randomizeColors());
-    document.getElementById("btnResetAll").addEventListener("click", () => this.resetAll());
+    // Quick Actions (Randomize & Reset)
+    const btnRandomize = document.getElementById("btnRandomize");
+    if (btnRandomize) {
+      btnRandomize.addEventListener("click", () => this.randomizeColors());
+    }
+    const btnResetAll = document.getElementById("btnResetAll");
+    if (btnResetAll) {
+      btnResetAll.addEventListener("click", () => this.resetAll());
+    }
 
     // Clear Custom Presets
     const clearBtn = document.getElementById("btnClearSvgPresets");
